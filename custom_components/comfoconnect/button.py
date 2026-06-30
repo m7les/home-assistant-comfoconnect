@@ -7,6 +7,7 @@ from collections.abc import Awaitable, Coroutine
 from dataclasses import dataclass
 from typing import Any, Callable, cast
 
+from aiocomfoconnect.const import VentilationSetting
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -36,6 +37,56 @@ BUTTON_TYPES = (
         press_fn=lambda ccb, option: cast(Coroutine, ccb.clear_errors()),
         name="Reset errors",
         entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    # --- Boost (timed) ---
+    ComfoconnectButtonEntityDescription(
+        key="boost_1h",
+        name="Boost (1 hour)",
+        icon="mdi:fast-forward",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(True, 60 * 60)),
+    ),
+    ComfoconnectButtonEntityDescription(
+        key="boost_3h",
+        name="Boost (3 hours)",
+        icon="mdi:fast-forward",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(True, 3 * 60 * 60)),
+    ),
+    ComfoconnectButtonEntityDescription(
+        key="boost_12h",
+        name="Boost (12 hours)",
+        icon="mdi:fast-forward",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(True, 12 * 60 * 60)),
+    ),
+    ComfoconnectButtonEntityDescription(
+        key="boost_off",
+        name="Boost off",
+        icon="mdi:stop",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(False)),
+    ),
+    # --- Bypass (timed) ---
+    ComfoconnectButtonEntityDescription(
+        key="bypass_on_1h",
+        name="Bypass open (1 hour)",
+        icon="mdi:fan-chevron-up",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(VentilationSetting.ON, 60 * 60)),
+    ),
+    ComfoconnectButtonEntityDescription(
+        key="bypass_on_12h",
+        name="Bypass open (12 hours)",
+        icon="mdi:fan-chevron-up",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(VentilationSetting.ON, 12 * 60 * 60)),
+    ),
+    ComfoconnectButtonEntityDescription(
+        key="bypass_off_1h",
+        name="Bypass closed (1 hour)",
+        icon="mdi:fan-chevron-down",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(VentilationSetting.OFF, 60 * 60)),
+    ),
+    ComfoconnectButtonEntityDescription(
+        key="bypass_auto",
+        name="Bypass auto",
+        icon="mdi:fan-auto",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(VentilationSetting.AUTO)),
     ),
 )
 

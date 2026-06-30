@@ -4,10 +4,15 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import Callable
 
 from aiocomfoconnect.sensors import (
+    SENSOR_CHANGING_FILTERS,
     SENSOR_COMFOCOOL_STATE,
     SENSOR_COMFOFOND_GHE_PRESENT,
+    SENSOR_DEVICE_STATE,
+    SENSOR_FROSTPROTECTION_UNBALANCE,
+    SENSOR_RF_PAIRING_MODE,
     SENSOR_SEASON_COOLING_ACTIVE,
     SENSOR_SEASON_HEATING_ACTIVE,
     SENSORS,
@@ -16,6 +21,7 @@ from aiocomfoconnect.sensors import (
     Sensor as AioComfoConnectSensor,
 )
 from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -41,8 +47,44 @@ class ComfoconnectRequiredKeysMixin:
 class ComfoconnectBinarySensorEntityDescription(BinarySensorEntityDescription, ComfoconnectRequiredKeysMixin):
     """Describes ComfoConnect binary sensor entity."""
 
+    # Optional callable to derive on/off from a raw PDO value. Defaults to bool(value).
+    mapping: Callable[[int], bool] = None
+
 
 SENSOR_TYPES = (
+    ComfoconnectBinarySensorEntityDescription(
+        key=SENSOR_DEVICE_STATE,
+        name="Away",
+        icon="mdi:airplane",
+        ccb_sensor=SENSORS.get(SENSOR_DEVICE_STATE),
+        mapping=lambda value: value == 7,
+    ),
+    ComfoconnectBinarySensorEntityDescription(
+        key=SENSOR_CHANGING_FILTERS,
+        name="Changing filters",
+        device_class=BinarySensorDeviceClass.RUNNING,
+        ccb_sensor=SENSORS.get(SENSOR_CHANGING_FILTERS),
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        mapping=lambda value: value == 2,
+    ),
+    ComfoconnectBinarySensorEntityDescription(
+        key=SENSOR_RF_PAIRING_MODE,
+        name="RF pairing active",
+        ccb_sensor=SENSORS.get(SENSOR_RF_PAIRING_MODE),
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        mapping=lambda value: value == 1,
+    ),
+    ComfoconnectBinarySensorEntityDescription(
+        key=SENSOR_FROSTPROTECTION_UNBALANCE,
+        name="Frost protection unbalance",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        ccb_sensor=SENSORS.get(SENSOR_FROSTPROTECTION_UNBALANCE),
+        entity_registry_enabled_default=False,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        mapping=lambda value: bool(value),
+    ),
     ComfoconnectBinarySensorEntityDescription(
         key=SENSOR_SEASON_HEATING_ACTIVE,
         name="Heating Season Active",
@@ -134,5 +176,8 @@ class ComfoConnectBinarySensor(BinarySensorEntity):
             value,
         )
 
-        self._attr_is_on = True if value else False
+        if self.entity_description.mapping:
+            self._attr_is_on = self.entity_description.mapping(value)
+        else:
+            self._attr_is_on = bool(value)
         self.schedule_update_ha_state()

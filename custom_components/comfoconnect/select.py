@@ -146,6 +146,33 @@ SELECT_TYPES = (
         set_value_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(True, int(option.split()[0]) * 60)),
         options=["10 Minutes", "20 Minutes", "30 Minutes", "40 Minutes", "50 Minutes", "60 Minutes"],
     ),
+    ComfoconnectSelectEntityDescription(
+        key="temperature_passive",
+        name="Temperature Passive",
+        icon="mdi:thermometer-minus",
+        entity_category=EntityCategory.CONFIG,
+        get_value_fn=lambda ccb: cast(Coroutine, ccb.get_sensor_ventmode_temperature_passive()),
+        set_value_fn=lambda ccb, option: cast(Coroutine, ccb.set_sensor_ventmode_temperature_passive(option)),
+        options=[VentilationSetting.OFF, VentilationSetting.AUTO, VentilationSetting.ON],
+    ),
+    ComfoconnectSelectEntityDescription(
+        key="humidity_comfort",
+        name="Humidity Comfort",
+        icon="mdi:water-percent",
+        entity_category=EntityCategory.CONFIG,
+        get_value_fn=lambda ccb: cast(Coroutine, ccb.get_sensor_ventmode_humidity_comfort()),
+        set_value_fn=lambda ccb, option: cast(Coroutine, ccb.set_sensor_ventmode_humidity_comfort(option)),
+        options=[VentilationSetting.OFF, VentilationSetting.AUTO, VentilationSetting.ON],
+    ),
+    ComfoconnectSelectEntityDescription(
+        key="humidity_protection",
+        name="Humidity Protection",
+        icon="mdi:water-percent",
+        entity_category=EntityCategory.CONFIG,
+        get_value_fn=lambda ccb: cast(Coroutine, ccb.get_sensor_ventmode_humidity_protection()),
+        set_value_fn=lambda ccb, option: cast(Coroutine, ccb.set_sensor_ventmode_humidity_protection(option)),
+        options=[VentilationSetting.OFF, VentilationSetting.AUTO, VentilationSetting.ON],
+    ),
 )
 
 

@@ -6,7 +6,10 @@ import logging
 from typing import Any
 
 from aiocomfoconnect.const import VentilationMode, VentilationSpeed
-from aiocomfoconnect.exceptions import ComfoConnectNotConnected, ComfoConnectRmiError
+from aiocomfoconnect.exceptions import (
+    AioComfoConnectNotConnected as ComfoConnectNotConnected,
+)
+from aiocomfoconnect.exceptions import ComfoConnectRmiError
 from aiocomfoconnect.sensors import (
     SENSOR_FAN_SPEED_MODE,
     SENSOR_OPERATING_MODE,

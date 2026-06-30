@@ -113,7 +113,7 @@ class ComfoConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.local_uuid = random_uuid_hex()
 
         # Connect to the bridge
-        await self.bridge._connect(self.local_uuid)
+        await self.bridge.connect(self.local_uuid)
         try:
             await self.bridge.cmd_start_session(True)
 
@@ -136,7 +136,7 @@ class ComfoConnectConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         finally:
             # Disconnect
-            await self.bridge._disconnect()
+            await self.bridge.disconnect()
 
         if self.context.get("source") == config_entries.SOURCE_REAUTH:
             self.hass.async_create_task(self.hass.config_entries.async_reload(self.context["entry_id"]))

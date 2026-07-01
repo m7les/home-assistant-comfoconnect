@@ -38,6 +38,13 @@ BUTTON_TYPES = (
         name="Reset errors",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
+    # --- Bathroom-switch boost ---
+    ComfoconnectButtonEntityDescription(
+        key="cancel_bathroom_boost",
+        name="Cancel bathroom boost",
+        icon="mdi:fan-off",
+        press_fn=lambda ccb, option: cast(Coroutine, ccb.cancel_bathroom_boost()),
+    ),
     # --- Bypass (timed) ---
     ComfoconnectButtonEntityDescription(
         key="bypass_on_1h",

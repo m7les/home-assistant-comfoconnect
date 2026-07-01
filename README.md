@@ -2,6 +2,8 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
+> **Fork notice.** This is a fork of [michaelarnauts/home-assistant-comfoconnect](https://github.com/michaelarnauts/home-assistant-comfoconnect) — the original integration by Michaël Arnauts. This fork (maintained by [@m7les](https://github.com/m7les)) adds expanded entity coverage: full PDO/RMI exposure, additional platforms (number/switch/climate), a reworked boost model, and diagnostic sensors. It is intended for testing, with the goal of contributing changes back upstream. All original work remains © Michaël Arnauts (MIT). It currently depends on the matching fork of [aiocomfoconnect](https://github.com/m7les/aiocomfoconnect).
+
 This is a custom integration for Home Assistant to integrate with the Zehnder ComfoAirQ ventilation system. It's using the [aiocomfoconnect](https://github.com/michaelarnauts/aiocomfoconnect) library.
 
 This custom integration is an upgrade over the existing `comfoconnect` integration and is meant for testing purposes. The goal is eventually to replace the existing `comfoconnect`

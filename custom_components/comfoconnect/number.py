@@ -19,8 +19,9 @@ from . import DOMAIN, ComfoConnectBridge
 
 _LOGGER = logging.getLogger(__name__)
 
-# Default boost duration (minutes) used before the user picks one / on first run.
+# Default durations (minutes) used before the user picks one / on first run.
 BOOST_DURATION_DEFAULT = 30
+BYPASS_DURATION_DEFAULT = 60
 
 
 @dataclass
@@ -99,7 +100,8 @@ async def async_setup_entry(
     ccb = hass.data[DOMAIN][config_entry.entry_id]
 
     numbers = [ComfoConnectNumber(ccb=ccb, config_entry=config_entry, description=description) for description in NUMBER_TYPES]
-    numbers.append(ComfoConnectBoostDurationNumber(ccb=ccb, config_entry=config_entry))
+    numbers.append(ComfoConnectLocalDurationNumber(ccb, "boost_duration", "Boost duration", "boost_duration_minutes", BOOST_DURATION_DEFAULT))
+    numbers.append(ComfoConnectLocalDurationNumber(ccb, "bypass_duration", "Bypass duration", "bypass_duration_minutes", BYPASS_DURATION_DEFAULT))
 
     async_add_entities(numbers, True)
 
@@ -135,15 +137,15 @@ class ComfoConnectNumber(NumberEntity):
         self.schedule_update_ha_state()
 
 
-class ComfoConnectBoostDurationNumber(RestoreNumber):
-    """Local preference for how long ``switch.boost`` runs.
+class ComfoConnectLocalDurationNumber(RestoreNumber):
+    """A HA-local duration preference (minutes) shared with a companion control.
 
-    This is a HA-side value, not a bridge setting: the app-boost has no persisted
+    Not a bridge setting: the app-boost and bypass overrides have no persisted
     duration on the unit, so we store the user's preferred length here and feed it
-    to ``set_boost`` when the boost switch is turned on. ``0`` means "until
-    cancelled" (mapped to the protocol's indefinite ``-1`` timeout by the switch).
-    The chosen value is stashed on the shared bridge object so the switch can read
-    it, and restored across restarts.
+    to the companion (switch.boost / select.bypass_mode) when it activates. ``0``
+    means "until cancelled" (the companion maps that to the protocol's indefinite
+    ``-1`` timeout). The value is stashed on the shared bridge object under ``attr``
+    so the companion can read it, and restored across restarts.
     """
 
     _attr_has_entity_name = True
@@ -154,17 +156,18 @@ class ComfoConnectBoostDurationNumber(RestoreNumber):
     _attr_native_step = 5
     _attr_native_unit_of_measurement = UnitOfTime.MINUTES
 
-    def __init__(self, ccb: ComfoConnectBridge, config_entry: ConfigEntry) -> None:
-        """Initialize the boost-duration number."""
+    def __init__(self, ccb: ComfoConnectBridge, key: str, name: str, attr: str, default: int) -> None:
+        """Initialize a local duration-preference number."""
         self._ccb = ccb
-        self._attr_name = "Boost duration"
-        self._attr_unique_id = f"{self._ccb.uuid}-boost_duration"
+        self._attr = attr
+        self._attr_name = name
+        self._attr_unique_id = f"{self._ccb.uuid}-{key}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, self._ccb.uuid)},
         )
-        self._attr_native_value = BOOST_DURATION_DEFAULT
-        # Seed the shared value so the switch has something before restore runs.
-        self._ccb.boost_duration_minutes = BOOST_DURATION_DEFAULT
+        self._attr_native_value = default
+        # Seed the shared value so the companion has something before restore runs.
+        setattr(self._ccb, attr, default)
 
     async def async_added_to_hass(self) -> None:
         """Restore the last chosen duration."""
@@ -172,10 +175,10 @@ class ComfoConnectBoostDurationNumber(RestoreNumber):
         last = await self.async_get_last_number_data()
         if last is not None and last.native_value is not None:
             self._attr_native_value = last.native_value
-        self._ccb.boost_duration_minutes = self._attr_native_value
+        setattr(self._ccb, self._attr, self._attr_native_value)
 
     async def async_set_native_value(self, value: float) -> None:
-        """Store the new boost duration."""
+        """Store the new duration."""
         self._attr_native_value = value
-        self._ccb.boost_duration_minutes = value
+        setattr(self._ccb, self._attr, value)
         self.schedule_update_ha_state()

@@ -7,7 +7,6 @@ from collections.abc import Awaitable, Coroutine
 from dataclasses import dataclass
 from typing import Any, Callable, cast
 
-from aiocomfoconnect.const import VentilationSetting
 from homeassistant.components.button import ButtonEntity, ButtonEntityDescription
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -50,31 +49,8 @@ BUTTON_TYPES = (
         icon="mdi:fan-off",
         press_fn=lambda ccb, option: cast(Coroutine, ccb.cancel_bathroom_boost()),
     ),
-    # --- Bypass (timed) ---
-    ComfoconnectButtonEntityDescription(
-        key="bypass_on_1h",
-        name="Bypass open (1 hour)",
-        icon="mdi:fan-chevron-up",
-        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(VentilationSetting.ON, 60 * 60)),
-    ),
-    ComfoconnectButtonEntityDescription(
-        key="bypass_on_12h",
-        name="Bypass open (12 hours)",
-        icon="mdi:fan-chevron-up",
-        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(VentilationSetting.ON, 12 * 60 * 60)),
-    ),
-    ComfoconnectButtonEntityDescription(
-        key="bypass_off_1h",
-        name="Bypass closed (1 hour)",
-        icon="mdi:fan-chevron-down",
-        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(VentilationSetting.OFF, 60 * 60)),
-    ),
-    ComfoconnectButtonEntityDescription(
-        key="bypass_auto",
-        name="Bypass auto",
-        icon="mdi:fan-auto",
-        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(VentilationSetting.AUTO)),
-    ),
+    # Bypass is controlled via select.bypass_mode + number.bypass_duration (see the
+    # boost model). Timed bypass buttons were removed to keep one control idiom.
 )
 
 

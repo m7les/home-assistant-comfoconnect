@@ -35,6 +35,21 @@ from . import DOMAIN, SIGNAL_COMFOCONNECT_UPDATE_RECEIVED, ComfoConnectBridge
 
 _LOGGER = logging.getLogger(__name__)
 
+# Fallback if the bypass-duration number hasn't seeded the shared value yet.
+BYPASS_DURATION_DEFAULT = 60
+
+
+def _bypass_timeout(ccb: ComfoConnectBridge) -> int:
+    """Resolve the bypass override timeout (seconds) from number.bypass_duration.
+
+    ``0`` (or unset) means "until cancelled", mapped to the protocol's indefinite
+    ``-1``. Ignored by set_bypass("auto"), which just clears the override.
+    """
+    minutes = getattr(ccb, "bypass_duration_minutes", BYPASS_DURATION_DEFAULT)
+    if not minutes:
+        return -1
+    return int(minutes) * 60
+
 
 @dataclass
 class ComfoconnectSelectDescriptionMixin:
@@ -74,7 +89,7 @@ SELECT_TYPES = (
         icon="mdi:camera-iris",
         entity_category=EntityCategory.CONFIG,
         get_value_fn=lambda ccb: cast(Coroutine, ccb.get_bypass()),
-        set_value_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(option)),
+        set_value_fn=lambda ccb, option: cast(Coroutine, ccb.set_bypass(option, _bypass_timeout(ccb))),
         options=[
             VentilationSetting.AUTO,
             VentilationSetting.ON,

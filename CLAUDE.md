@@ -49,6 +49,14 @@ values. Prefer HA-idiomatic display: keep stable snake_case state values and add
   (`boost_1h/3h/12h`, `boost_off`). Timed boost = the duration number + switch, or an
   automation. Do not add per-duration entities back.
 
+## Bypass model (same idiom as boost — keep consistent)
+- `select.bypass_mode` (auto/open/closed) is the canonical control; `number.bypass_duration`
+  feeds it the timeout (0 = until cancelled → `-1`). The select passes that to `set_bypass`.
+- Removed the timed bypass buttons (`bypass_on_1h/12h`, `bypass_off_1h`, `bypass_auto`).
+  Don't reintroduce them — mirror boost.
+- Both duration numbers share one entity class, `ComfoConnectLocalDurationNumber`
+  (HA-local preference stashed on `ccb.<attr>_minutes`; not a bridge setting).
+
 ## Bathroom-switch installer settings
 Writable ones are `number` entities (CONFIG, disabled by default):
 `bathroom_switch_boost_duration` (0x0c, min), `bathroom_switch_activation_delay`

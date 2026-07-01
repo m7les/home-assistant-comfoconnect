@@ -607,17 +607,20 @@ SENSOR_TYPES = (
         key=SENSOR_OPERATING_MODE_2,
         device_class=SensorDeviceClass.ENUM,
         name="Operating mode",
+        translation_key="operating_mode",
         options=OPERATING_MODE_OPTIONS,
         icon="mdi:fan-auto",
         ccb_sensor=SENSORS.get(SENSOR_OPERATING_MODE_2),
         # Primary state surface (ESPHome-style): auto / boost / boost_rf /
         # bathroom_switch / away / manual_*. Automate directly on this.
+        # Values stay snake_case (stable); UI labels come from translations.
         mapping=lambda x: OPERATING_MODE_MAP.get(x),
     ),
     ComfoconnectSensorEntityDescription(
         key=SENSOR_COMFORTCONTROL_MODE,
         device_class=SensorDeviceClass.ENUM,
         name="Sensor ventilation mode",
+        translation_key="ventilation_mode",
         options=VENTILATION_MODE_OPTIONS,
         icon="mdi:fan-auto",
         ccb_sensor=SENSORS.get(SENSOR_COMFORTCONTROL_MODE),

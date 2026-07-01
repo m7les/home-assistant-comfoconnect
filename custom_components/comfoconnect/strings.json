@@ -29,6 +29,31 @@
           "off": "Off"
         }
       }
+    },
+    "sensor": {
+      "operating_mode": {
+        "name": "Operating mode",
+        "state": {
+          "auto": "Auto",
+          "manual_limited": "Manual (limited)",
+          "manual_permanent": "Manual (permanent)",
+          "boost": "Boost",
+          "boost_rf": "Boost (RF)",
+          "preset_rf": "Preset RF",
+          "preset_analog": "Preset analog",
+          "preset_rf_analog": "Preset RF + analog",
+          "bathroom_switch": "Bathroom switch",
+          "away": "Away"
+        }
+      },
+      "ventilation_mode": {
+        "name": "Sensor ventilation mode",
+        "state": {
+          "disabled": "Disabled",
+          "active": "Active",
+          "overruling": "Overruling"
+        }
+      }
     }
   },
   "config": {

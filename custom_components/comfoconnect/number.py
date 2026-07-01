@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from typing import Any, Callable, cast
 
 from aiocomfoconnect.const import VentilationSpeed
-from homeassistant.components.number import NumberEntity, NumberEntityDescription
+from homeassistant.components.number import NumberDeviceClass, NumberEntity, NumberEntityDescription, RestoreNumber
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfVolumeFlowRate
+from homeassistant.const import UnitOfTime, UnitOfVolumeFlowRate
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -18,6 +18,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import DOMAIN, ComfoConnectBridge
 
 _LOGGER = logging.getLogger(__name__)
+
+# Default boost duration (minutes) used before the user picks one / on first run.
+BOOST_DURATION_DEFAULT = 30
 
 
 @dataclass
@@ -54,6 +57,36 @@ NUMBER_TYPES = (
     _flow_description(VentilationSpeed.LOW, "Airflow set-point (low)"),
     _flow_description(VentilationSpeed.MEDIUM, "Airflow set-point (medium)"),
     _flow_description(VentilationSpeed.HIGH, "Airflow set-point (high)"),
+    # Installer bathroom-switch settings — writable, verified against real hardware.
+    # Disabled by default: these are commissioning values, not everyday controls.
+    ComfoconnectNumberEntityDescription(
+        key="bathroom_switch_boost_duration",
+        name="Bathroom switch boost duration",
+        icon="mdi:timer-cog-outline",
+        entity_category=EntityCategory.CONFIG,
+        entity_registry_enabled_default=False,
+        device_class=NumberDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        native_min_value=1,
+        native_max_value=60,
+        native_step=1,
+        get_value_fn=lambda ccb: cast(Coroutine, ccb.get_bathroom_switch_boost_duration()),
+        set_value_fn=lambda ccb, value: cast(Coroutine, ccb.set_bathroom_switch_boost_duration(int(value))),
+    ),
+    ComfoconnectNumberEntityDescription(
+        key="bathroom_switch_activation_delay",
+        name="Bathroom switch activation delay",
+        icon="mdi:timer-sand",
+        entity_category=EntityCategory.CONFIG,
+        entity_registry_enabled_default=False,
+        device_class=NumberDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        native_min_value=0,
+        native_max_value=600,
+        native_step=1,
+        get_value_fn=lambda ccb: cast(Coroutine, ccb.get_bathroom_switch_activation_delay()),
+        set_value_fn=lambda ccb, value: cast(Coroutine, ccb.set_bathroom_switch_activation_delay(int(value))),
+    ),
 )
 
 
@@ -66,6 +99,7 @@ async def async_setup_entry(
     ccb = hass.data[DOMAIN][config_entry.entry_id]
 
     numbers = [ComfoConnectNumber(ccb=ccb, config_entry=config_entry, description=description) for description in NUMBER_TYPES]
+    numbers.append(ComfoConnectBoostDurationNumber(ccb=ccb, config_entry=config_entry))
 
     async_add_entities(numbers, True)
 
@@ -98,4 +132,50 @@ class ComfoConnectNumber(NumberEntity):
         """Set a new airflow set-point."""
         await self.entity_description.set_value_fn(self._ccb, value)
         self._attr_native_value = value
+        self.schedule_update_ha_state()
+
+
+class ComfoConnectBoostDurationNumber(RestoreNumber):
+    """Local preference for how long ``switch.boost`` runs.
+
+    This is a HA-side value, not a bridge setting: the app-boost has no persisted
+    duration on the unit, so we store the user's preferred length here and feed it
+    to ``set_boost`` when the boost switch is turned on. ``0`` means "until
+    cancelled" (mapped to the protocol's indefinite ``-1`` timeout by the switch).
+    The chosen value is stashed on the shared bridge object so the switch can read
+    it, and restored across restarts.
+    """
+
+    _attr_has_entity_name = True
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_icon = "mdi:timer-cog-outline"
+    _attr_native_min_value = 0
+    _attr_native_max_value = 1440
+    _attr_native_step = 5
+    _attr_native_unit_of_measurement = UnitOfTime.MINUTES
+
+    def __init__(self, ccb: ComfoConnectBridge, config_entry: ConfigEntry) -> None:
+        """Initialize the boost-duration number."""
+        self._ccb = ccb
+        self._attr_name = "Boost duration"
+        self._attr_unique_id = f"{self._ccb.uuid}-boost_duration"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._ccb.uuid)},
+        )
+        self._attr_native_value = BOOST_DURATION_DEFAULT
+        # Seed the shared value so the switch has something before restore runs.
+        self._ccb.boost_duration_minutes = BOOST_DURATION_DEFAULT
+
+    async def async_added_to_hass(self) -> None:
+        """Restore the last chosen duration."""
+        await super().async_added_to_hass()
+        last = await self.async_get_last_number_data()
+        if last is not None and last.native_value is not None:
+            self._attr_native_value = last.native_value
+        self._ccb.boost_duration_minutes = self._attr_native_value
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Store the new boost duration."""
+        self._attr_native_value = value
+        self._ccb.boost_duration_minutes = value
         self.schedule_update_ha_state()

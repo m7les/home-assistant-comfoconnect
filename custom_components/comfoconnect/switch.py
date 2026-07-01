@@ -18,6 +18,21 @@ from . import DOMAIN, ComfoConnectBridge
 
 _LOGGER = logging.getLogger(__name__)
 
+# Fallback if the boost-duration number hasn't seeded the shared value yet.
+BOOST_DURATION_DEFAULT = 30
+
+
+def _boost_timeout(ccb: ComfoConnectBridge) -> int:
+    """Resolve the boost timeout (seconds) from the boost-duration number.
+
+    ``0`` (or unset) means "until cancelled", mapped to the protocol's indefinite
+    ``-1`` timeout so the switch behaves as a latch rather than self-expiring.
+    """
+    minutes = getattr(ccb, "boost_duration_minutes", BOOST_DURATION_DEFAULT)
+    if not minutes:
+        return -1
+    return int(minutes) * 60
+
 
 @dataclass
 class ComfoconnectSwitchDescriptionMixin:
@@ -47,7 +62,7 @@ SWITCH_TYPES = (
         name="Boost",
         icon="mdi:fan-plus",
         is_on_fn=lambda ccb: cast(Coroutine, ccb.get_boost()),
-        turn_on_fn=lambda ccb: cast(Coroutine, ccb.set_boost(True)),
+        turn_on_fn=lambda ccb: cast(Coroutine, ccb.set_boost(True, _boost_timeout(ccb))),
         turn_off_fn=lambda ccb: cast(Coroutine, ccb.set_boost(False)),
     ),
     ComfoconnectSwitchEntityDescription(

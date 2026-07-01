@@ -646,6 +646,157 @@ DEBUG_SENSOR_TYPES = tuple(
 )
 
 
+@dataclass
+class ComfoconnectPropertySensorEntityDescription(SensorEntityDescription):
+    """Describes a polled RMI-property ComfoConnect sensor.
+
+    Unlike the PDO sensors above (which are pushed over the dispatcher), these read
+    a static installer/configuration value from the unit via a library getter.
+    """
+
+    get_value_fn: Callable = None
+
+
+# Text maps for enum-ish config properties (library returns raw ints).
+_ALTITUDE_BANDS = {0: "0-500 m", 1: "500-1000 m", 2: "1000-1500 m", 3: "1500-2000 m"}
+_CONTROL_MODES = {0: "flow control", 1: "constant flow"}
+_BATHROOM_MODES = {0: "fixed", 1: "mirrored"}
+
+
+async def _altitude_band(ccb):
+    return _ALTITUDE_BANDS.get(await ccb.get_altitude(), None)
+
+
+async def _control_mode(ccb):
+    return _CONTROL_MODES.get(await ccb.get_ventilation_control_mode(), None)
+
+
+async def _bathroom_mode(ccb):
+    return _BATHROOM_MODES.get(await ccb.get_bathroom_switch_mode(), None)
+
+
+# Read-only diagnostics polled over RMI (node info + installer configuration). None
+# of these stream as PDOs, so they live on their own polled entity. All are disabled
+# by default to keep the entity list clean; enable the ones you care about.
+PROPERTY_SENSOR_TYPES = (
+    # --- Node identity ---
+    ComfoconnectPropertySensorEntityDescription(
+        key="serial_number",
+        name="Serial number",
+        icon="mdi:identifier",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_serial_number(),
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="model",
+        name="Model",
+        icon="mdi:hvac",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_model(),
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="firmware_version",
+        name="Firmware version",
+        icon="mdi:chip",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_firmware_version(),
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="article_number",
+        name="Article number",
+        icon="mdi:barcode",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_article_number(),
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="country",
+        name="Country",
+        icon="mdi:earth",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_country(),
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="unit_name",
+        name="Unit name",
+        icon="mdi:rename-box",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_name(),
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="orientation",
+        name="Orientation",
+        icon="mdi:arrow-decision",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_orientation(),
+    ),
+    # --- Installer / ventilation configuration ---
+    ComfoconnectPropertySensorEntityDescription(
+        key="altitude",
+        name="Altitude band",
+        icon="mdi:image-filter-hdr",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=_altitude_band,
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="ventilation_control_mode",
+        name="Ventilation control mode",
+        icon="mdi:fan-chevron-up",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=_control_mode,
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="unbalance",
+        name="Unbalance",
+        icon="mdi:scale-unbalanced",
+        native_unit_of_measurement=PERCENTAGE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_unbalance(),
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="rmot_setpoint_heating",
+        name="RMOT setpoint (heating period)",
+        icon="mdi:thermometer-chevron-down",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_rmot_setpoint("heating"),
+    ),
+    ComfoconnectPropertySensorEntityDescription(
+        key="rmot_setpoint_cooling",
+        name="RMOT setpoint (cooling period)",
+        icon="mdi:thermometer-chevron-up",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        device_class=SensorDeviceClass.TEMPERATURE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=lambda ccb: ccb.get_rmot_setpoint("cooling"),
+    ),
+    # --- Bathroom switch (installer) ---
+    # boost_duration (0x0c) and activation_delay (0x0b) are writable, so they live on
+    # the number platform. Mode (0x0d) accepts a write but the unit ignores it (it
+    # needs a second physical switch for "mirrored"), so it stays read-only here.
+    ComfoconnectPropertySensorEntityDescription(
+        key="bathroom_switch_mode",
+        name="Bathroom switch mode",
+        icon="mdi:toggle-switch-variant",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        get_value_fn=_bathroom_mode,
+    ),
+)
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     config_entry: ConfigEntry,
@@ -656,6 +807,7 @@ async def async_setup_entry(
 
     descriptions = (*SENSOR_TYPES, *DEBUG_SENSOR_TYPES)
     sensors = [ComfoConnectSensor(ccb=ccb, config_entry=config_entry, description=description) for description in descriptions]
+    sensors += [ComfoConnectPropertySensor(ccb=ccb, config_entry=config_entry, description=description) for description in PROPERTY_SENSOR_TYPES]
 
     async_add_entities(sensors, True)
 
@@ -718,3 +870,32 @@ class ComfoConnectSensor(SensorEntity):
         else:
             self._attr_native_value = value
         self.schedule_update_ha_state()
+
+
+class ComfoConnectPropertySensor(SensorEntity):
+    """A polled sensor reading a static RMI property (e.g. installer settings)."""
+
+    _attr_has_entity_name = True
+    entity_description: ComfoconnectPropertySensorEntityDescription
+
+    def __init__(
+        self,
+        ccb: ComfoConnectBridge,
+        config_entry: ConfigEntry,
+        description: ComfoconnectPropertySensorEntityDescription,
+    ) -> None:
+        """Initialize the property sensor."""
+        self._ccb = ccb
+        self.entity_description = description
+        self._attr_unique_id = f"{self._ccb.uuid}-{description.key}"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, self._ccb.uuid)},
+        )
+
+    async def async_update(self) -> None:
+        """Poll the property value; leave unavailable if the unit doesn't expose it."""
+        try:
+            self._attr_native_value = await self.entity_description.get_value_fn(self._ccb)
+        except Exception as err:  # noqa: BLE001 - hardware-dependent; degrade gracefully
+            _LOGGER.debug("Could not read property sensor %s: %s", self.entity_description.key, err)
+            self._attr_native_value = None

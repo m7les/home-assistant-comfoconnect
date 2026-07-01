@@ -38,31 +38,6 @@ BUTTON_TYPES = (
         name="Reset errors",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    # --- Boost (timed) ---
-    ComfoconnectButtonEntityDescription(
-        key="boost_1h",
-        name="Boost (1 hour)",
-        icon="mdi:fast-forward",
-        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(True, 60 * 60)),
-    ),
-    ComfoconnectButtonEntityDescription(
-        key="boost_3h",
-        name="Boost (3 hours)",
-        icon="mdi:fast-forward",
-        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(True, 3 * 60 * 60)),
-    ),
-    ComfoconnectButtonEntityDescription(
-        key="boost_12h",
-        name="Boost (12 hours)",
-        icon="mdi:fast-forward",
-        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(True, 12 * 60 * 60)),
-    ),
-    ComfoconnectButtonEntityDescription(
-        key="boost_off",
-        name="Boost off",
-        icon="mdi:stop",
-        press_fn=lambda ccb, option: cast(Coroutine, ccb.set_boost(False)),
-    ),
     # --- Bypass (timed) ---
     ComfoconnectButtonEntityDescription(
         key="bypass_on_1h",

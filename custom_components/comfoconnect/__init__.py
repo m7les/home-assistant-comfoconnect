@@ -114,6 +114,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unit_model = await bridge.get_property(PROPERTY_MODEL)
     unit_firmware = await bridge.get_property(PROPERTY_FIRMWARE_VERSION)
     unit_name = await bridge.get_property(PROPERTY_NAME)
+    try:
+        unit_serial = await bridge.get_serial_number()
+        unit_article = await bridge.get_article_number()
+    except Exception:  # noqa: BLE001 - device info is best-effort; don't block setup
+        unit_serial = None
+        unit_article = None
 
     device_registry = dr.async_get(hass)
 
@@ -135,6 +141,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         name=unit_name,
         model=unit_model,
         sw_version=version_decode(unit_firmware),
+        serial_number=unit_serial,
+        hw_version=unit_article,
         via_device=(DOMAIN, bridge_info.serialNumber),
     )
 

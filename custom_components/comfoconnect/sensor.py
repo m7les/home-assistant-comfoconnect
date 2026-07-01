@@ -610,8 +610,8 @@ SENSOR_TYPES = (
         options=OPERATING_MODE_OPTIONS,
         icon="mdi:fan-auto",
         ccb_sensor=SENSORS.get(SENSOR_OPERATING_MODE_2),
-        entity_registry_enabled_default=False,
-        entity_category=EntityCategory.DIAGNOSTIC,
+        # Primary state surface (ESPHome-style): auto / boost / boost_rf /
+        # bathroom_switch / away / manual_*. Automate directly on this.
         mapping=lambda x: OPERATING_MODE_MAP.get(x),
     ),
     ComfoconnectSensorEntityDescription(

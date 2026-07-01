@@ -12,7 +12,6 @@ from aiocomfoconnect.sensors import (
     SENSOR_COMFOFOND_GHE_PRESENT,
     SENSOR_DEVICE_STATE,
     SENSOR_FROSTPROTECTION_UNBALANCE,
-    SENSOR_OPERATING_MODE_2,
     SENSOR_RF_PAIRING_MODE,
     SENSOR_SEASON_COOLING_ACTIVE,
     SENSOR_SEASON_HEATING_ACTIVE,
@@ -53,16 +52,6 @@ class ComfoconnectBinarySensorEntityDescription(BinarySensorEntityDescription, C
 
 
 SENSOR_TYPES = (
-    ComfoconnectBinarySensorEntityDescription(
-        key=SENSOR_OPERATING_MODE_2,
-        name="Boost active",
-        device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:fan-plus",
-        ccb_sensor=SENSORS.get(SENSOR_OPERATING_MODE_2),
-        # Operating mode: 6=boost, 7=boost_rf, 8=bathroom_switch (physical wall button).
-        # On for any boost trigger; sensor.operating_mode tells you which source.
-        mapping=lambda value: value in (6, 7, 8),
-    ),
     ComfoconnectBinarySensorEntityDescription(
         key=SENSOR_DEVICE_STATE,
         name="Away",

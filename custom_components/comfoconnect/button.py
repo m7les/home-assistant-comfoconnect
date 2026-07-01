@@ -39,6 +39,11 @@ BUTTON_TYPES = (
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     # --- Bathroom-switch boost ---
+    # TODO: live-verify. The cancel wire bytes match a manual clear proven on real
+    # hardware, but this entity path is untested end-to-end. To confirm: press a
+    # physical bathroom switch (sensor.operating_mode -> "bathroom_switch"), then
+    # press this button and check the mode clears (rather than waiting out the
+    # installer deactivation delay). See get_bathroom_boost() for read-back.
     ComfoconnectButtonEntityDescription(
         key="cancel_bathroom_boost",
         name="Cancel bathroom boost",
